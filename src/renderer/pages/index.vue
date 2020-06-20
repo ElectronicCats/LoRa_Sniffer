@@ -1,99 +1,95 @@
 <template>
-  <div class="e-nuxt-container">
-    <div class="e-nuxt-content">
-      <div class="e-nuxt-logo">
-        <img style="max-width: 100%;" src="~assets/electron-nuxt.png">
-      </div>
-      <div class="e-nuxt-system-info">
-        <system-information />
-      </div>
+  <section class="h-screen flex flex-col">
+    <div class="header flex">
+      <h1 class="flex-1 text-2xl">Lora Sniffer</h1>
+      <port-list @change="selectPort" />
     </div>
-    <div class="e-nuxt-links">
-      <div class="e-nuxt-button" @click="openURL('https://github.com/michalzaq12/electron-nuxt')">
-        Github
-      </div>
-      <div class="e-nuxt-button" @click="openURL('https://nuxtjs.org/guide')">
-        Nuxt.js
-      </div>
-      <div class="e-nuxt-button" @click="openURL('https://electronjs.org/docs')">
-        Electron.js
-      </div>
-    </div>
-  </div>
+
+    <pre
+      class="flex-1 border-0 border-t border-b border-gray-500 overflow-auto"
+      v-highlightjs="consoleHistory"><code class="shell"></code></pre>
+
+    <form @submit.prevent="handlerForm" class="flex bg-gray-400">
+      <input type="text" v-model="command" class="flex-1 p-2" :disabled="!currentPort" />
+      <input type="submit" value="Send" class="py-2 px-4 bg-blue-600 text-white font-bold" />
+    </form>
+  </section>
 </template>
 
 <script>
-import { remote } from 'electron'
-import SystemInformation from '@/components/SystemInformation.vue'
-
-const serialport = require('serialport')
+import PortList from '../components/PortsList'
+import Serialport from 'serialport'
+import Readline from '@serialport/parser-readline'
 
 export default {
   components: {
-    SystemInformation
+    PortList
   },
   data () {
     return {
-      externalContent: ''
+      port: '',
+      currentPort: undefined,
+      consoleHistory: '$ """ Choose one port """',
+      command: '',
+      parser: undefined
     }
   },
   mounted() {
-    serialport.list().then((ports) => {
-      const activePosrt =ports.filter(port => port.vendorId)
-      console.log(activePosrt)
-    })
+    // const port = new serialport(activePorts[0].path, { baudRate: 115200 })
+    // const parser = new Readline()
+    // port.pipe(parser)
+    // parser.on('data', line => console.log(`> ${line}`))
+  },
+  destroyed() {
+    this.currentPort.close()
   },
   methods: {
-    openURL (url) {
-      remote.shell.openExternal(url)
+    addLine (line) {
+      this.consoleHistory = this.consoleHistory + `\n$ ${line.replace(/(\r\n|\n|\r)/gm, "")}`
+    },
+    createConection () {
+      if (this.currentPort !== undefined) this.currentPort.close()
+      this.currentPort = new Serialport(this.port, { baudRate: 115200 }, err => {
+        if (err) {
+          console.log(err)
+          return this.addLine(`fail conection: port '${this.port}'`)
+        }
+        this.parser = new Readline()
+        this.currentPort.pipe(this.parser)
+        this.parser.on('data', this.addLine)
+      }) 
+    },
+    selectPort (port) {
+      this.port = port
+      this.addLine(`port '${port}' selected`)
+      this.createConection()
+      this.addLine(`port '${port}' active`)
+    },
+    handlerForm () {
+      this.addLine(this.command)
+      
+      if (this.command.includes('reconect')) {
+        this.createConection()
+      } else if (this.command.includes('clear')) {
+        this.consoleHistory = ''
+        this.addLine('clear')
+      } else {
+        this.currentPort.write(this.command + '\n', function(err) {
+          if (err) {
+            console.error(err)
+            this.addLine(`reconecting...`)
+            return
+          }
+          console.log('message written')
+        })
+      }
+      
+      this.command = ''
     }
   }
 }
 </script>
 
 <style>
-.e-nuxt-container {
-  min-height: calc(100vh - 50px);
-  background: linear-gradient(to right, #ece9e6, #ffffff);
-  font-family: Helvetica, sans-serif;
-}
 
-.e-nuxt-content {
-  display: flex;
-  justify-content: space-around;
-  padding-top: 100px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-.e-nuxt-logo{
-  width: 400px;
-}
-
-.e-nuxt-system-info {
-  padding: 20px;
-  border-top: 1px solid #397c6d;
-  border-bottom: 1px solid #397c6d;
-}
-
-.e-nuxt-links {
-  padding: 100px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.e-nuxt-button {
-  color: #364758;
-  padding: 5px 20px;
-  border: 1px solid #397c6d;
-  margin: 0 20px;
-  border-radius: 15px;
-  font-size: 1rem;
-}
-
-.e-nuxt-button:hover{
-  cursor: pointer;
-  color: white;
-  background-color: #397c6d;
-}
 </style>

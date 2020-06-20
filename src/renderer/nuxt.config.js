@@ -13,13 +13,13 @@ module.exports = {
   loading: false,
   plugins: [
     {ssr: true, src: '@/plugins/icons.js'},
-    
-    
+    '@/plugins/vue-highlgiht.js'
   ],
   buildModules: [
-    
+    '@nuxtjs/tailwindcss'
   ],
   modules: [
     
   ],
+  css: [ 'highlight.js/styles/github.css' ]
 };

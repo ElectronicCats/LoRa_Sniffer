@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@mdi/font": "5.3.45",
+    "@nuxtjs/tailwindcss": "^2.0.0",
     "@xpda-dev/core": "^0.1.5",
     "@xpda-dev/electron-builder": "^0.2.1",
     "@xpda-dev/electron-launcher": "^0.2.1",
@@ -41,6 +42,8 @@
     "webpack-node-externals": "1.7.2"
   },
   "dependencies": {
-    "serialport": "^9.0.0"
+    "highlight.js": "^10.1.1",
+    "serialport": "^9.0.0",
+    "vue-highlightjs": "^1.3.3"
   }
 }
